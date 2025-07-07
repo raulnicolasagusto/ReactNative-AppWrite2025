@@ -12,3 +12,7 @@ client
 // Exporta los servicios para usarlos en el resto de tu app
 export const account = new Account(client);
 export const databases = new Databases(client);
+
+export const DATABASE_ID = process.env.EXPO_PUBLIC_DB_ID!;
+export const HABITS_COLLECTION_ID = process.env.EXPO_PUBLIC_HABITS_COLLECTION_ID!;
+
