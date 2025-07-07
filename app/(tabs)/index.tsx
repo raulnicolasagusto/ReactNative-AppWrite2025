@@ -77,22 +77,20 @@ export default function Index() {
         <Text style={styles.emptyStateText} variant="bodyMedium">No tienes habitos, Agrega tus primeros</Text>
       ) : (
         habits.map((habit, key) => (
-          <Surface>
-          //seimpre va key={key} para que no haya errores y se indexen correctamente
-          <View key={key} style={styles.cardContent}>
-            <Text variant="bodyMedium" style={styles.cardTitle}>{habit.title}</Text>
-            <Text variant="bodyMedium" style={styles.cardDescription}>{habit.description}</Text>
-            <View style={styles.cardFooter}>
-              <View style={styles.streakBadge}>
-                {" "}
-                <MaterialCommunityIcons name="fire" size={18} color={"#ff9800"}/>
-                <Text style={styles.streakText} variant="bodyMedium">{habit.streak_count} dias de racha</Text>
-              </View>
-              <View style={styles.frequencyBadge}>
-                <Text style={styles.frequencyText} variant="bodyMedium">{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</Text>
+          <Surface key={key} style={styles.card}>
+            <View style={styles.cardContent}>
+              <Text variant="bodyMedium" style={styles.cardTitle}>{habit.title}</Text>
+              <Text variant="bodyMedium" style={styles.cardDescription}>{habit.description}</Text>
+              <View style={styles.cardFooter}>
+                <View style={styles.streakBadge}>
+                  <MaterialCommunityIcons name="fire" size={18} color={"#ff9800"}/>
+                  <Text style={styles.streakText} variant="bodyMedium">{habit.streak_count} dias de racha</Text>
+                </View>
+                <View style={styles.frequencyBadge}>
+                  <Text style={styles.frequencyText} variant="bodyMedium">{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</Text>
+                </View>
               </View>
             </View>
-          </View>
           </Surface>
         ))
       ) }
@@ -137,15 +135,8 @@ const styles = StyleSheet.create({
   card:{
     marginBottom: 18,
     borderRadius: 18,
-    backgroundColor: "f7f2fa",
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    backgroundColor: "#ffffff",
+    elevation: 4,
   },
   cardContent: {
     padding: 20,
