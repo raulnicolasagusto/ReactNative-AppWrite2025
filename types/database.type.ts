@@ -12,3 +12,9 @@ export interface Habit extends Models.Document {
 
 }
     
+export interface HabitCompletion extends Models.Document {
+    habit_id: string,
+    user_id: string,
+    completed_at: string,
+
+}
