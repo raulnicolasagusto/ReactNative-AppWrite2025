@@ -1,41 +1,45 @@
-import { client, DATABASE_ID, databases, HABITS_COLLECTION_ID, RealtimeResponse } from "@/lib/appwrite";
+import { client, COMPLETIONS_COLLECTION_ID, DATABASE_ID, databases, HABITS_COLLECTION_ID, RealtimeResponse } from "@/lib/appwrite";
 import { useAuth } from "@/lib/auth-context";
 import { Habit } from "@/types/database.type";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { Query } from "appwrite";
-import { useEffect, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { ID, Query } from "appwrite";
+import { useEffect, useRef, useState } from "react";
+import { ScrollView, StyleSheet, View } from "react-native";
+import { Swipeable } from "react-native-gesture-handler";
 import { Button, Surface, Text } from "react-native-paper";
 
 export default function Index() {
   const {signOut, user} = useAuth();
   const [habits, setHabits] = useState<Habit[]>([]);
 
+  //esto es para la librearia Swipeable
+  const swipeableRef = useRef<{ [key:string]: Swipeable | null }>({});
+
 
   //Activamos la funcion fetchHabits para que se vea en esta pantalla siempre que estemos en ella.
   useEffect(() => {
-    
-    //para actualizar en tiempo real apenas se carga un habito
-    const channel =`databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`;
-    const habitsSubscription = client.subscribe(
-      channel, 
-      (response: RealtimeResponse) => {
-        if ( response.events.includes("databases.*.collections.*.documents.*.create")) {
-          fetchHabits();
-        }else if ( response.events.includes("databases.*.collections.*.documents.*.update")) {
-          fetchHabits();
-        }else if ( response.events.includes("databases.*.collections.*.documents.*.delete")) {
-          fetchHabits();
-        }
-      }
-    );
-    
-    fetchHabits();
+    if(user){
+        //para actualizar en tiempo real apenas se carga un habito
+        const channel =`databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`;
+        const habitsSubscription = client.subscribe(
+          channel, 
+          (response: RealtimeResponse) => {
+            if ( response.events.includes("databases.*.collections.*.documents.*.create")) {
+              fetchHabits();
+            }else if ( response.events.includes("databases.*.collections.*.documents.*.update")) {
+              fetchHabits();
+            }else if ( response.events.includes("databases.*.collections.*.documents.*.delete")) {
+              fetchHabits();
+            }
+          }
+        );
+        
+        fetchHabits();
 
-    return () => {
-      habitsSubscription();
-    };
-
+        return () => {
+          habitsSubscription();
+        };
+    }
   }, [user]);
 //MOSTRAMOS LA LISTA DE HABITOS DE LA BASE DE DATOS APPWRITE
   const fetchHabits = async () => {
@@ -54,8 +58,75 @@ export default function Index() {
     }
   };
 
-  return (
+  // funciones del swipeable, para el movimiento que tienen al hacer swipe a la derecha o isquierda
+  const renderRightActions = () => (
+    <View style={styles.swipeActionRight}>
+      <MaterialCommunityIcons name="check-circle-outline" size={32} color="#fff"/>
+    </View>
+  )
+
+  const renderLeftActions = () => (
+    <View style={styles.swipeActionLeft}>
+      <MaterialCommunityIcons name="trash-can-outline" size={32} color="#fff"/>
+    </View>
+  )
+
+  //funcion que elimina un habito al hacer swipe
+  const handleDeleteHabit = async (id: string) => {
+    try {
+      await databases.deleteDocument(
+        DATABASE_ID,
+        HABITS_COLLECTION_ID,
+        id,
+      );
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  //FUNCION PARA MARCAR UN HABITO COMO COMPLETADO
+  const handleCompleteHabit = async (id: string) => {
+    if(!user) return;
+
+    try {
+
+      const currentDate= new Date().toISOString();
+
+      await databases.createDocument(
+        DATABASE_ID,
+        COMPLETIONS_COLLECTION_ID,
+        ID.unique(),
+        {
+          habit_id: id,
+          user_id: user.$id,
+          completed_at: currentDate,
+        }
+      );
+      //en esta parte del codigo, encontramos el id del habito y lo actualizamos los datos que necestamos actualizar.
+      const habit = habits?.find((h)=>h.$id === id);
+
+      if(!habit) return;
+
+      await databases.updateDocument(
+        DATABASE_ID,
+        HABITS_COLLECTION_ID,
+        id,
+        {
+          streak_count: habit.streak_count + 1,
+          last_completed: currentDate,
+        }
+      );
+     
+      
+    } catch (error) {
+      console.error(error);
+    }
+  };
     
+  
+
+  return (
+    <ScrollView showsVerticalScrollIndicator={false}>
     <View
       style={styles.container}
     >
@@ -77,25 +148,41 @@ export default function Index() {
         <Text style={styles.emptyStateText} variant="bodyMedium">No tienes habitos, Agrega tus primeros</Text>
       ) : (
         habits.map((habit, key) => (
-          <Surface key={key} style={styles.card}>
-            <View style={styles.cardContent}>
-              <Text variant="bodyMedium" style={styles.cardTitle}>{habit.title}</Text>
-              <Text variant="bodyMedium" style={styles.cardDescription}>{habit.description}</Text>
-              <View style={styles.cardFooter}>
-                <View style={styles.streakBadge}>
-                  <MaterialCommunityIcons name="fire" size={18} color={"#ff9800"}/>
-                  <Text style={styles.streakText} variant="bodyMedium">{habit.streak_count} dias de racha</Text>
-                </View>
-                <View style={styles.frequencyBadge}>
-                  <Text style={styles.frequencyText} variant="bodyMedium">{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</Text>
+          <Swipeable ref={(ref)=>{swipeableRef.current[habit.$id] = ref;}}
+           key={key}
+           overshootLeft={false}
+           overshootRight={false}
+           renderRightActions={renderRightActions}
+           renderLeftActions={renderLeftActions}
+           onSwipeableOpen={(direction) => {
+            if(direction === "left"){
+              handleDeleteHabit(habit.$id);
+            }else if(direction === "right"){
+              handleCompleteHabit(habit.$id);
+            }
+            swipeableRef.current[habit.$id]?.close();
+           }}
+           >
+            <Surface key={key} style={styles.card}>
+              <View style={styles.cardContent}>
+                <Text variant="bodyMedium" style={styles.cardTitle}>{habit.title}</Text>
+                <Text variant="bodyMedium" style={styles.cardDescription}>{habit.description}</Text>
+                <View style={styles.cardFooter}>
+                  <View style={styles.streakBadge}>
+                    <MaterialCommunityIcons name="fire" size={18} color={"#ff9800"}/>
+                    <Text style={styles.streakText} variant="bodyMedium">{habit.streak_count} dias de racha</Text>
+                  </View>
+                  <View style={styles.frequencyBadge}>
+                    <Text style={styles.frequencyText} variant="bodyMedium">{habit.frequency.charAt(0).toUpperCase() + habit.frequency.slice(1)}</Text>
+                  </View>
                 </View>
               </View>
-            </View>
-          </Surface>
+            </Surface>
+          </Swipeable>
         ))
       ) }
     </View>
-    
+    </ScrollView>    
   );
 }
 
@@ -150,7 +237,7 @@ const styles = StyleSheet.create({
   },
   cardDescription: {
     fontSize: 15,
-    marginBottom: 16,
+    marginBottom: 8,
     color:"#6c6c80"
   },
   cardFooter: {
@@ -192,4 +279,25 @@ const styles = StyleSheet.create({
     
     
   },
+  swipeActionRight: {
+    backgroundColor: "#4caf50",
+    justifyContent: "center",
+    alignItems: "flex-end",
+    flex: 1,
+    borderRadius: 18,
+    marginBottom: 18,
+    marginTop: 2,
+    paddingLeft: 16,
+  },
+  swipeActionLeft: {
+    backgroundColor: "#f44336", 
+    justifyContent: "center",
+    alignItems: "flex-start",
+    flex: 1,
+    borderRadius: 18,
+    marginBottom: 18,
+    marginTop: 2,
+    paddingRight: 16,
+  },
 });
+
