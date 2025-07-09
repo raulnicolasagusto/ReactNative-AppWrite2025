@@ -19,42 +19,69 @@ export default function Index() {
 
   //Activamos la funcion fetchHabits para que se vea en esta pantalla siempre que estemos en ella.
   useEffect(() => {
+    let habitsSubscription: any = null;
+    let completionsSubscription: any = null;
+
     if(user){
-        //para actualizar en tiempo real apenas se carga un habito
+      //para actualizar en tiempo real apenas se carga un habito
+      try {
+        // Create channels
         const habitsChannel =`databases.${DATABASE_ID}.collections.${HABITS_COLLECTION_ID}.documents`;
-        const habitsSubscription = client.subscribe(
-          habitsChannel, 
+        const completionsChannel =`databases.${DATABASE_ID}.collections.${COMPLETIONS_COLLECTION_ID}.documents`;
+
+        // Initialize subscriptions
+        habitsSubscription = client.subscribe(habitsChannel, 
           (response: RealtimeResponse) => {
-            if ( response.events.includes("databases.*.collections.*.documents.*.create")) {
-              fetchHabits();
-            }else if ( response.events.includes("databases.*.collections.*.documents.*.update")) {
-              fetchHabits();
-            }else if ( response.events.includes("databases.*.collections.*.documents.*.delete")) {
-              fetchHabits();
+            try {
+              if (response.events.includes("databases.*.collections.*.documents.*.create")) {
+                fetchHabits();
+              } else if (response.events.includes("databases.*.collections.*.documents.*.update")) {
+                fetchHabits();
+              } else if (response.events.includes("databases.*.collections.*.documents.*.delete")) {
+                fetchHabits();
+              }
+            } catch (error) {
+              console.error('Error in habits subscription handler:', error);
             }
           }
         );
 
-        const completionsChannel =`databases.${DATABASE_ID}.collections.${COMPLETIONS_COLLECTION_ID}.documents`;
-        const completionsSubscription = client.subscribe(
-          completionsChannel, 
+        completionsSubscription = client.subscribe(completionsChannel, 
           (response: RealtimeResponse) => {
-            if ( response.events.includes("databases.*.collections.*.documents.*.create")) {
-              fetchTodayCompletions();
+            try {
+              if (response.events.includes("databases.*.collections.*.documents.*.create")) {
+                fetchTodayCompletions();
+              }
+            } catch (error) {
+              console.error('Error in completions subscription handler:', error);
             }
           }
         );
-        
+
+        // Fetch initial data
         fetchHabits();
         fetchTodayCompletions();
 
+        // Cleanup function
         return () => {
-          habitsSubscription();
-          completionsSubscription();
+          try {
+            if (habitsSubscription) {
+              habitsSubscription();
+            }
+            if (completionsSubscription) {
+              completionsSubscription();
+            }
+          } catch (error) {
+            console.error('Error cleaning up subscriptions:', error);
+          }
         };
+      } catch (error) {
+        console.error('Error initializing subscriptions:', error);
+      }
     }
   }, [user]);
-//MOSTRAMOS LA LISTA DE HABITOS DE LA BASE DE DATOS APPWRITE
+
+  //MOSTRAMOS LA LISTA DE HABITOS DE LA BASE DE DATOS APPWRITE
   const fetchHabits = async () => {
     try {
      const response = await databases.listDocuments(
@@ -72,9 +99,9 @@ export default function Index() {
   };
 
   // funciones del swipeable, para el movimiento que tienen al hacer swipe a la derecha o isquierda
-  const renderRightActions = () => (
+  const renderRightActions = (habitId: string) => (
     <View style={styles.swipeActionRight}>
-      <MaterialCommunityIcons name="check-circle-outline" size={32} color="#fff"/>
+    {isHabitCompleted(habitId) ? <Text style={{color:"#fff", fontWeight:"bold"}}>Completado!</Text> : <MaterialCommunityIcons name="check-circle-outline" size={32} color="#fff"/>}
     </View>
   )
 
@@ -136,6 +163,11 @@ export default function Index() {
     }
   };
     
+
+ //mostras los habitos del dia completados
+ const isHabitCompleted = (habitId: string) => completedHabits.includes(habitId);
+ 
+
  //esta funcion muestra los habitos que delsizaron a la derecha , es decir se cumplieron 
   const fetchTodayCompletions = async () => {
     try {
@@ -184,7 +216,7 @@ export default function Index() {
            key={key}
            overshootLeft={false}
            overshootRight={false}
-           renderRightActions={renderRightActions}
+           renderRightActions={() => renderRightActions(habit.$id)}
            renderLeftActions={renderLeftActions}
            onSwipeableOpen={(direction) => {
             if(direction === "left"){
@@ -195,7 +227,7 @@ export default function Index() {
             swipeableRef.current[habit.$id]?.close();
            }}
            >
-            <Surface key={key} style={styles.card}>
+            <Surface key={key} style={[styles.card, isHabitCompleted(habit.$id) && styles.cardCompleted,]}>
               <View style={styles.cardContent}>
                 <Text variant="bodyMedium" style={styles.cardTitle}>{habit.title}</Text>
                 <Text variant="bodyMedium" style={styles.cardDescription}>{habit.description}</Text>
@@ -278,6 +310,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 16,
   },
+
+  cardCompleted: {
+    backgroundColor: "#f7f2fa",
+    opacity: 0.6,
+  },
+
   streakBadge: {
     flexDirection: "row",
     alignItems: "center",
