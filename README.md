@@ -1,3 +1,7 @@
+## HECHO CON EL VIDEO DE PEDROTECH : React Native Full Course 2025 | Become a React Native Pro in 4 Hours
+
+LINK DEL VIDEO : https://www.youtube.com/watch?v=J50gwzwLvAk&t=14753s
+
 # React Native App with Appwrite Integration
 
 This is a React Native app built with Expo that integrates with Appwrite for authentication and database functionality.
