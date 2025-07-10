@@ -1,50 +1,122 @@
-# Welcome to your Expo app 👋
+# React Native App with Appwrite Integration
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+This is a React Native app built with Expo that integrates with Appwrite for authentication and database functionality.
 
-## Get started
+## Prerequisites
 
-1. Install dependencies
+Before you start, make sure you have the following installed:
 
+- Node.js (v18 or higher)
+- npm or yarn
+- Expo CLI
+- Git
+
+## Setup Instructions
+
+### 1. Setup Appwrite
+
+1. Create an Appwrite account at [https://appwrite.io](https://appwrite.io)
+2. Create a new project in Appwrite
+3. Create the following collections:
+
+   - **Habits Collection**
+     - Fields:
+       - title (string)
+       - description (string)
+       - user_id (string)
+       - created_at (timestamp)
+       - updated_at (timestamp)
+     - Indexes:
+       - user_id (string)
+
+   - **Completions Collection**
+     - Fields:
+       - habit_id (string)
+       - user_id (string)
+       - completed_at (timestamp)
+     - Indexes:
+       - user_id (string)
+       - habit_id (string)
+
+4. Create a new API key for your project
+5. Note down your Appwrite endpoint URL and API key
+
+### 2. Setup the Project
+
+1. Clone the repository
+   ```bash
+   git clone [your-repo-url]
+   cd react2025
+   ```
+
+2. Install dependencies
    ```bash
    npm install
    ```
 
-2. Start the app
+3. Create a `.env` file in the root directory and add your Appwrite configuration:
+   ```
+   APPWRITE_ENDPOINT=your_appwrite_endpoint
+   APPWRITE_PROJECT_ID=your_project_id
+   APPWRITE_API_KEY=your_api_key
+   ```
 
+4. Start the development server
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+5. Run the app in your preferred environment:
+   - Android emulator: `npx expo start --android`
+   - iOS simulator: `npx expo start --ios`
+   - Web: `npx expo start --web`
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+### 3. Appwrite Configuration
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+The app uses the following Appwrite collections:
 
-## Get a fresh project
+- **Habits Collection**
+  - Stores user habits
+  - Each habit has a title, description, and user_id
+  - Used to track user's daily habits
 
-When you're ready, run:
+- **Completions Collection**
+  - Tracks habit completions
+  - Stores habit_id, user_id, and completion timestamp
+  - Used to calculate streaks and statistics
 
-```bash
-npm run reset-project
-```
+### 4. Features
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+- User authentication using Appwrite
+- Habit tracking with streaks
+- Real-time habit completion tracking
+- Statistics and analytics
+- Responsive UI for mobile and web
 
-## Learn more
+### 5. Development
 
-To learn more about developing your project with Expo, look at the following resources:
+The project uses:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+- Expo Router for navigation
+- React Native Paper for UI components
+- Appwrite for backend services
+- TypeScript for type safety
 
-## Join the community
+## Troubleshooting
 
-Join our community of developers creating universal apps.
+1. If you encounter any Appwrite connection issues:
+   - Verify your `.env` file is properly configured
+   - Check if your Appwrite instance is running
+   - Verify network connectivity
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+2. If you encounter any build issues:
+   - Clear the Expo cache: `npx expo start --clear`
+   - Reinstall dependencies: `npm install`
+
+## Support
+
+For issues and feature requests, please open an issue in the repository.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
